@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-semibold">Parsed Results Dashboard</h1>
+  <a href="/upload/" class="bg-card border border-border px-4 py-2 rounded-lg text-sm text-muted hover:text-accent">Upload more</a>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+  {% include "components/stat_card.html" with title="Total Entries" value=total %}
+  {% include "components/stat_card.html" with title="Food Logged" value=food_count %}
+  {% include "components/stat_card.html" with title="Symptoms Found" value=symptom_count %}
+  {% include "components/stat_card.html" with title="Negated Symptoms" value=negated %}
+</div>
+
+<div class="bg-card border border-border rounded-xl overflow-hidden">
+  <table class="w-full text-sm">
+    <thead class="bg-bg text-muted">
+      <tr>
+        <th class="p-3 text-left">Entry ID</th>
+        <th class="p-3">Foods</th>
+        <th class="p-3">Symptoms</th>
+        <th class="p-3">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in entries %}
+      <tr class="border-t border-border hover:bg-bg">
+        <td class="p-3">{{ entry.entry_id }}</td>
+        <td class="p-3 text-center">{{ entry.foods|length }}</td>
+        <td class="p-3 text-center">{{ entry.symptoms|length }}</td>
+        <td class="p-3 text-center">
+          <a href="/entry/{{ entry.entry_id }}/" class="text-accent hover:underline">View</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td class="p-6 text-muted" colspan="4">No parsed entries yet. Upload a JSONL file to get started.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

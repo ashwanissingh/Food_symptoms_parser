@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-semibold">Entry {{ entry.entry_id }}</h1>
+    <div class="text-muted text-sm">Parser version: {{ entry.parser_version }}</div>
+  </div>
+  <a href="/dashboard/" class="text-muted hover:text-accent">Back to dashboard</a>
+</div>
+
+<div class="bg-card border border-border rounded-xl p-6 mb-6">
+  <h2 class="text-lg font-semibold mb-2">Raw Journal</h2>
+  <p class="text-muted whitespace-pre-wrap">{{ entry.raw_text }}</p>
+</div>
+
+{% if entry.parse_errors|length > 0 %}
+  <div class="bg-card border border-error rounded-xl p-5 mb-6">
+    <div class="text-error font-medium mb-2">Parse errors</div>
+    <ul class="text-muted text-sm space-y-1">
+      {% for err in entry.parse_errors %}
+        <li>{{ err }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  {% include "components/food_table.html" %}
+  {% include "components/symptom_table.html" %}
+</div>
+
+{% endblock %}

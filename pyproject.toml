@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "light-parse"
+version = "0.1.0"
+description = "On-device deterministic health journal light parsing (food + symptoms)."
+requires-python = ">=3.10"
+readme = "README.md"
+dependencies = [
+  "Django>=4.2,<5.0",
+  "pytest>=7.4",
+  "pytest-django>=4.7",
+]
+
+[project.scripts]
+light_parse = "lightparse.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q"
+DJANGO_SETTINGS_MODULE = "healthparse.settings"
+

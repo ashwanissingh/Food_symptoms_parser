@@ -1,0 +1,45 @@
+<div class="bg-card border border-border rounded-xl overflow-hidden">
+  <div class="px-5 py-4 border-b border-border">
+    <h3 class="text-lg font-semibold">Symptoms</h3>
+  </div>
+
+  {% if entry.symptoms|length == 0 %}
+    <div class="p-5 text-muted">No symptoms extracted.</div>
+  {% else %}
+    <table class="w-full text-sm">
+      <thead class="bg-bg text-muted">
+        <tr>
+          <th class="p-3 text-left">Name</th>
+          <th class="p-3 text-left">Severity</th>
+          <th class="p-3 text-left">Time</th>
+          <th class="p-3 text-left">Negated</th>
+          <th class="p-3 text-left">Confidence</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in entry.symptoms %}
+          <tr class="border-t border-border hover:bg-bg">
+            <td class="p-3">{{ s.name }}</td>
+            <td class="p-3 text-muted">{{ s.severity|default:"-" }}</td>
+            <td class="p-3 text-muted">{{ s.time_hint|default:"-" }}</td>
+            <td class="p-3">
+              {% if s.negated %}
+                <span class="text-success font-medium">Yes</span>
+              {% else %}
+                <span class="text-muted">No</span>
+              {% endif %}
+            </td>
+            <td class="p-3">
+              <div class="flex items-center gap-3">
+                <div class="w-28 bg-bg border border-border rounded-full h-2 overflow-hidden">
+                  <div class="h-2 bg-accent" style="width: {{ s.confidence_pct }}%;"></div>
+                </div>
+                <span class="text-muted">{{ s.confidence|floatformat:2 }}</span>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+</div>
