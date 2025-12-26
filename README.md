@@ -1,285 +1,272 @@
-🚀 LangSense AI — Smart Language Detection
+On-Device Light Parsing — Food & Symptom Extraction
 
-LangSense AI is an advanced rule-based language detection system that accurately identifies English, Hindi, and Hinglish text with 92–95% accuracy.
-It is built using Django, Django REST Framework, and modern frontend technologies, and includes a beautiful analytics dashboard, history tracking, and a REST API for easy integration.
+A privacy-first, deterministic parsing system that extracts structured food and symptom signals from free-text health journals — without using LLMs, ML models, or cloud services.
 
-🌟 Key Features
+This project was built as part of Exercise C — On-Device Light Parsing and emphasizes clean system design, separation of concerns, and testability.
 
-🌐 Multi-Language Detection — English, Hindi, Hinglish
+Overview
 
-🎯 High Accuracy — 92–95% with confidence scoring
+Daily health journals are often written in informal, mixed-language text.
+This system converts such free-text entries into structured, machine-readable signals using rule-based parsing only, suitable for on-device execution.
 
-⚡ Real-time Processing — Fast and lightweight
+Key principles:
 
-🎨 Beautiful UI — Glassmorphism design with Dark/Light mode
+Deterministic and explainable logic
 
-🔌 RESTful API — Easy backend integration
+Clear separation between food and symptom parsing
 
-📊 Analytics Dashboard — Charts, statistics, trends
+Conservative extraction (avoid over-parsing)
 
-🕒 Detection History — Paginated and filterable history
+Easy to test, extend, and reason about
 
-🛠 Admin Panel — Manage Hinglish vocabulary dynamically
+What This System Does
 
-🧠 How LangSense AI Works
+For each journal entry, the system extracts:
 
-LangSense AI uses a multi-signal, weighted scoring approach instead of heavy ML models, making it fast, explainable, and reliable.
+Food Signals
 
-1️⃣ Unicode Ratio (Hindi Detection)
+Normalized food name (singular form)
 
-Detects Devanagari characters (\u0900 – \u097F)
+Optional quantity and unit
 
-Strongest signal for Hindi
+Meal type (breakfast / lunch / dinner / snack / unknown)
 
-Very high precision
+Confidence score (0–1)
 
-2️⃣ Token-based English Detection
+Symptom Signals
 
-English dictionary + stopword analysis
+Normalized symptom name
 
-Morphological pattern checks
+Optional severity (e.g., 6/10)
 
-Filters false positives
+Optional time hint (morning, evening, after meal, etc.)
 
-3️⃣ Hinglish Detection (Heuristics)
+Negation flag (e.g., “no headache”)
 
-Roman Hindi words: hai, hoon, raha, rahi, tha, nahi, kya, kyun
+Confidence score (0–1)
 
-Bigram patterns:
+The final output is a structured JSON record per entry.
 
-ja raha, kar raha, ho gaya
+Architecture
+Input (entries.jsonl)
+        |
+        v
+┌────────────────────┐
+│ LightParsePipeline │
+│  (Orchestrator)    │
+└──────┬───────┬─────┘
+       │       │
+       v       v
+┌──────────┐ ┌────────────┐
+│FoodParser│ │SymptomParser│
+└──────────┘ └────────────┘
+       │       │
+       └───┬───┘
+           v
+     Parsed Output (JSONL)
 
-Mixed-script and mixed-grammar detection
+Component Breakdown
+1. FoodParser
 
-4️⃣ Weighted Confidence Scoring
-confidence = round(
-    (top_score / (hindi_score + english_score + hinglish_score)) * 100,
-    2
-)
+Responsibility:
+Extracts only food-related signals.
 
+Key behaviors:
 
-✔ Higher confidence when one language dominates
-✔ Balanced confidence for mixed content
+Normalizes plurals (e.g., eggs → egg)
 
-🛠 Technology Stack
-Backend
+Supports Hinglish foods (dal, chawal, idli, rajma, poha, etc.)
 
-Python 3.10+
+Handles informal separators (+, ,, &, newlines)
 
-Django 4+
+Detects skipped meals (e.g., “Skipped dinner”)
 
-Django REST Framework
+Does not infer nutrition, calories, or health impact
 
-SQLite (Dev) / PostgreSQL (Prod)
+2. SymptomParser
 
-Frontend
+Responsibility:
+Extracts only physical symptom signals.
 
-HTML5 / CSS3
+Key behaviors:
 
-JavaScript (ES6+)
+Handles symptom negation (“no headache”)
 
-Tailwind CSS
+Extracts severity when explicitly stated (6/10)
 
-Chart.js
+Detects time hints (morning, night, after meal)
 
-Font Awesome
+Ignores:
 
-📦 Installation & Setup
-Prerequisites
+Emotions (mood, stress, anxiety unless clearly physical)
 
-Python 3.10+
+Vitals (BP, steps, weight)
 
-pip
+Medications and diagnoses
 
-Installation Steps
+3. LightParsePipeline
 
-1️⃣ Clone the repository
+Responsibility:
+A thin orchestrator that:
 
-git clone https://github.com/your-username/language_detaction.git
-cd language_detaction
+Runs FoodParser and SymptomParser independently
 
+Merges results into a single structured output
 
-2️⃣ Create virtual environment
+Does not apply inference or transformation logic
 
-python -m venv venv
-source venv/bin/activate
-# Windows:
-venv\Scripts\activate
+Output Format
 
-
-3️⃣ Install dependencies
-
-pip install -r requirements.txt
-
-
-4️⃣ Run migrations
-
-python manage.py makemigrations
-python manage.py migrate
-
-
-5️⃣ Create superuser (optional)
-
-python manage.py createsuperuser
-
-
-6️⃣ Run development server
-
-python manage.py runserver
-
-
-7️⃣ Access application
-
-🌐 App: http://127.0.0.1:8000
-
-🔐 Admin: http://127.0.0.1:8000/admin
-
-🧪 Sample Test Cases
-Input Text	Expected Output	Confidence
-I am going to office	English	96%
-मैं आज ऑफिस जा रहा हूँ	Hindi	98%
-Main office ja raha hoon	Hinglish	94%
-Kal meeting hai at office	Hinglish	92%
-Hello, how are you?	English	95%
-आज बहुत अच्छा दिन है	Hindi	97%
-🔌 API Documentation
-🔹 Detect Language
-POST /api/detect-language/
-Content-Type: application/json
-
-
-Request
+Each entry produces the following JSON structure:
 
 {
-  "text": "Main office ja raha hoon"
-}
-
-
-Response
-
-{
-  "success": true,
-  "data": {
-    "detected_language": "Hinglish",
-    "confidence": 94.5,
-    "hindi_score": 15.2,
-    "english_score": 25.8,
-    "hinglish_score": 85.4,
-    "breakdown": {
-      "hindi_percentage": 12.1,
-      "english_percentage": 20.5,
-      "hinglish_percentage": 67.4
+  "entry_id": "e_012",
+  "foods": [
+    {
+      "name": "chips",
+      "quantity": null,
+      "unit": null,
+      "meal": "snack",
+      "confidence": 0.7
     }
-  }
+  ],
+  "symptoms": [
+    {
+      "name": "stomach pain",
+      "severity": null,
+      "time_hint": "after_meal",
+      "negated": false,
+      "confidence": 0.8
+    }
+  ],
+  "parse_errors": [],
+  "parser_version": "v1"
 }
 
-🔹 Detection History
-GET /api/detection-history/?page=1&per_page=20&language=Hinglish
+CLI Usage
 
-🔹 Statistics
-GET /api/statistics/
+The system includes a CLI for batch processing.
 
-🔹 Test Detection
-POST /api/test-detection/
+light_parse --in entries.jsonl --out parsed.jsonl
 
-🎨 UI Highlights
 
-Glassmorphism cards
+Reads input as JSONL
 
-Animated charts
+Runs the parsing pipeline
 
-Dark / Light theme toggle
+Writes structured output as JSONL
 
-Responsive (mobile-first)
+Does not require running the Django server
 
-3D animated particle background
+Django UI
 
-🎨 Color Scheme
+An optional Django UI is included for visualization.
 
-Primary Gradient: #6366F1 → #22D3EE
+Features:
 
-Hindi: #FF6B35
+Dark / black professional theme
 
-English: #3B82F6
+Upload entries.jsonl
 
-Hinglish: #10B981
+View parsed food & symptom results
 
-🗄 Database Models
-LanguageDetection
+Entry-level detail view
 
-Input text
+No cloud or external dependencies
 
-Detected language
+Testing & Validation
 
-Confidence score
+Validation focuses on correctness and restraint.
 
-Score breakdown
+Tests Included
 
-Timestamp & metadata
+Unit tests for FoodParser
 
-HinglishWord
+Unit tests for SymptomParser
 
-Roman Hindi vocabulary
+Integration tests for the pipeline
 
-Admin-managed
+Covered Scenarios
 
-Frequency & type tracking
+Symptom negation
 
-DetectionStats
+Skipped meals
 
-Daily aggregates
+Hinglish text
 
-Confidence distribution
+Severity extraction
 
-Language trends
+False-positive numbers (BP, steps)
 
-🚀 Deployment
-Environment Variables
-DEBUG=False
-SECRET_KEY=your-secret-key
-ALLOWED_HOSTS=yourdomain.com
-DATABASE_URL=postgresql://user:pass@localhost/dbname
+Evaluation Strategy
 
-Collect Static Files
-python manage.py collectstatic
+Synthetic dataset used as a golden reference
 
-Gunicorn
-gunicorn langsense.wsgi:application --bind 0.0.0.0:8000
+Priority given to precision over recall
 
-Docker (Optional)
-FROM python:3.10-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY . .
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+Ambiguous cases are intentionally ignored
 
-🤝 Contributing
+Key Assumptions
 
-Fork the repository
+Journal entries are short and informal
 
-Create a feature branch
+Only explicitly stated signals should be extracted
 
-Commit changes
+Over-parsing is worse than missing weak signals
 
-Add tests if applicable
+Deterministic rules are preferred over probabilistic inference
 
-Submit a pull request
+Known Limitations
 
-📝 License
+Sarcasm or metaphorical language is not handled
 
-MIT License — free to use, modify, and distribute.
+Complex grammatical Hindi is only partially supported
 
-🙏 Acknowledgements
+Emoji interpretation is minimal
 
-Django & Django REST Framework
+Confidence scores are heuristic, not learned
 
-Tailwind CSS
+No cross-entry temporal reasoning
 
-Chart.js
+What Was Intentionally Not Done
 
-Font Awesome
+No diagnosis inference
 
-📞 Support
+No emotion classification
 
-📧 Email: mittalprakhar504@gmail.com
+No ML or LLM usage
+
+No cloud APIs
+
+No personalization or user profiling
+
+Future Improvements
+
+With more time, the system could be extended with:
+
+Configurable lexicons (JSON/YAML)
+
+Improved Hinglish normalization
+
+Rule-explanation traces for debugging
+
+Export to CSV / SQLite
+
+Optional lightweight analytics on parsed outputs
+
+Declaration
+
+This project:
+
+Is entirely my own work
+
+Uses no prohibited tools or models
+
+Follows the constraints and intent of Exercise C
+
+Prioritizes clarity, determinism, and extensibility
+
+Final Note
+
+This project is designed to demonstrate system thinking, careful constraint handling, and clean architecture, rather than model complexity.
+Every design choice favors explainability and correctness over cleverness.
