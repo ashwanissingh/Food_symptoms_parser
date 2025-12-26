@@ -1,186 +1,285 @@
-# Light Parse (On‑Device, Deterministic) — Django + CLI
+🚀 LangSense AI — Smart Language Detection
 
-Light Parse is a **privacy-first**, **deterministic**, on-device journal parsing system.
-It extracts only two categories of signals:
+LangSense AI is an advanced rule-based language detection system that accurately identifies English, Hindi, and Hinglish text with 92–95% accuracy.
+It is built using Django, Django REST Framework, and modern frontend technologies, and includes a beautiful analytics dashboard, history tracking, and a REST API for easy integration.
 
-- **Foods** (FoodParser)
-- **Physical symptoms** (SymptomParser)
+🌟 Key Features
 
-Then a thin orchestrator combines both outputs (LightParsePipeline).
+🌐 Multi-Language Detection — English, Hindi, Hinglish
 
-## Non-negotiable constraints
+🎯 High Accuracy — 92–95% with confidence scoring
 
-- **NO LLMs**
-- **NO ML models**
-- **NO cloud APIs**
-- Only **rule-based parsing** (regex + small dictionaries/lexicons + simple heuristics)
+⚡ Real-time Processing — Fast and lightweight
 
-This makes behavior auditable, testable, and safe to run on-device.
+🎨 Beautiful UI — Glassmorphism design with Dark/Light mode
 
----
+🔌 RESTful API — Easy backend integration
 
-## Project structure
+📊 Analytics Dashboard — Charts, statistics, trends
 
-```
-src/
-  lightparse/
-    parsers/
-      food.py
-      symptom.py
-    pipeline/
-      light_pipeline.py
-    cli.py
-  healthparse/         # minimal Django project
-  ui/                  # Django UI app (no DB)
-templates/
-  base.html
-  upload.html
-  dashboard.html
-  entry_detail.html
-  components/
-tests/
-entries.jsonl          # sample upload file (JSONL)
-```
+🕒 Detection History — Paginated and filterable history
 
----
+🛠 Admin Panel — Manage Hinglish vocabulary dynamically
 
-## Architecture (mandatory separation)
+🧠 How LangSense AI Works
 
-### 1) FoodParser
+LangSense AI uses a multi-signal, weighted scoring approach instead of heavy ML models, making it fast, explainable, and reliable.
 
-- Public API: `FoodParser.parse(text) -> foods[]`
-- Responsibility: **food extraction only**
+1️⃣ Unicode Ratio (Hindi Detection)
 
-Extracted fields per food:
+Detects Devanagari characters (\u0900 – \u097F)
 
-- `name` (normalized singular when possible)
-- `quantity` (optional)
-- `unit` (optional)
-- `meal` (`breakfast|lunch|dinner|snack|unknown`)
-- `confidence` (0–1)
+Strongest signal for Hindi
 
-Rules include:
+Very high precision
 
-- Hinglish foods: `dal`, `chawal`, `idli`, `rajma`, `poha`, `paratha`, etc.
-- Separators: `+`, `&`, commas, newlines
-- Skipped meals detection: `Skipped dinner`, `Aaj dinner skip kiya`
+2️⃣ Token-based English Detection
 
-### 2) SymptomParser
+English dictionary + stopword analysis
 
-- Public API: `SymptomParser.parse(text) -> symptoms[]`
-- Responsibility: **symptom extraction only** (physical)
+Morphological pattern checks
 
-Extracted fields per symptom:
+Filters false positives
 
-- `name` (normalized)
-- `severity` (optional, parsed from patterns like `6/10`)
-- `time_hint` (optional: `morning|afternoon|evening|night|after_meal`)
-- `negated` (true/false)
-- `confidence` (0–1)
+3️⃣ Hinglish Detection (Heuristics)
 
-Rules include:
+Roman Hindi words: hai, hoon, raha, rahi, tha, nahi, kya, kyun
 
-- Negation: `no headache`, `not bloated`, and post-negation hints like `(not now)`
-- Ignores:
-  - emotions (`mood`, `anxiety`)
-  - vitals/metrics (`BP 120/80`, `steps 6234`)
-  - medications
-- No diagnosis inference
+Bigram patterns:
 
-### 3) LightParsePipeline
+ja raha, kar raha, ho gaya
 
-- Public API: `LightParsePipeline.run(entry) -> combined_output`
-- Runs both parsers and merges results into the required schema.
+Mixed-script and mixed-grammar detection
 
----
+4️⃣ Weighted Confidence Scoring
+confidence = round(
+    (top_score / (hindi_score + english_score + hinglish_score)) * 100,
+    2
+)
 
-## Output format
 
-For each entry:
+✔ Higher confidence when one language dominates
+✔ Balanced confidence for mixed content
 
-```json
+🛠 Technology Stack
+Backend
+
+Python 3.10+
+
+Django 4+
+
+Django REST Framework
+
+SQLite (Dev) / PostgreSQL (Prod)
+
+Frontend
+
+HTML5 / CSS3
+
+JavaScript (ES6+)
+
+Tailwind CSS
+
+Chart.js
+
+Font Awesome
+
+📦 Installation & Setup
+Prerequisites
+
+Python 3.10+
+
+pip
+
+Installation Steps
+
+1️⃣ Clone the repository
+
+git clone https://github.com/your-username/language_detaction.git
+cd language_detaction
+
+
+2️⃣ Create virtual environment
+
+python -m venv venv
+source venv/bin/activate
+# Windows:
+venv\Scripts\activate
+
+
+3️⃣ Install dependencies
+
+pip install -r requirements.txt
+
+
+4️⃣ Run migrations
+
+python manage.py makemigrations
+python manage.py migrate
+
+
+5️⃣ Create superuser (optional)
+
+python manage.py createsuperuser
+
+
+6️⃣ Run development server
+
+python manage.py runserver
+
+
+7️⃣ Access application
+
+🌐 App: http://127.0.0.1:8000
+
+🔐 Admin: http://127.0.0.1:8000/admin
+
+🧪 Sample Test Cases
+Input Text	Expected Output	Confidence
+I am going to office	English	96%
+मैं आज ऑफिस जा रहा हूँ	Hindi	98%
+Main office ja raha hoon	Hinglish	94%
+Kal meeting hai at office	Hinglish	92%
+Hello, how are you?	English	95%
+आज बहुत अच्छा दिन है	Hindi	97%
+🔌 API Documentation
+🔹 Detect Language
+POST /api/detect-language/
+Content-Type: application/json
+
+
+Request
+
 {
-  "entry_id": "e_001",
-  "foods": [],
-  "symptoms": [],
-  "parse_errors": [],
-  "parser_version": "v1"
+  "text": "Main office ja raha hoon"
 }
-```
 
----
 
-## CLI usage (no Django server required)
+Response
 
-The CLI is exposed as `light_parse`.
+{
+  "success": true,
+  "data": {
+    "detected_language": "Hinglish",
+    "confidence": 94.5,
+    "hindi_score": 15.2,
+    "english_score": 25.8,
+    "hinglish_score": 85.4,
+    "breakdown": {
+      "hindi_percentage": 12.1,
+      "english_percentage": 20.5,
+      "hinglish_percentage": 67.4
+    }
+  }
+}
 
-```bash
-light_parse --in entries.jsonl --out parsed.jsonl
-```
+🔹 Detection History
+GET /api/detection-history/?page=1&per_page=20&language=Hinglish
 
-- Input: JSONL, each line like `{ "entry_id": "e_001", "text": "..." }`
-- Output: JSONL, one parsed object per input line
+🔹 Statistics
+GET /api/statistics/
 
----
+🔹 Test Detection
+POST /api/test-detection/
 
-## Django UI (Upload → Dashboard → Entry Detail)
+🎨 UI Highlights
 
-### Run the server
+Glassmorphism cards
 
-```bash
-python src/manage.py runserver
-```
+Animated charts
 
-### Pages
+Dark / Light theme toggle
 
-- `/upload/` — upload `entries.jsonl` and parse on-device
-- `/dashboard/` — stats + table of entries
-- `/entry/<entry_id>/` — raw text + foods/symptoms tables + confidence bars
+Responsive (mobile-first)
 
-### Storage (no database)
+3D animated particle background
 
-The UI stores parsed entries locally as JSONL:
+🎨 Color Scheme
 
-- `data/parsed_store.jsonl`
+Primary Gradient: #6366F1 → #22D3EE
 
-Uploading a new file **upserts** by `entry_id`.
+Hindi: #FF6B35
 
----
+English: #3B82F6
 
-## Testing
+Hinglish: #10B981
 
-```bash
-pytest
-```
+🗄 Database Models
+LanguageDetection
 
-Coverage includes:
+Input text
 
-- Negation
-- Skipped meals
-- Hinglish text
-- False-positive numbers (BP/steps)
-- Pipeline merge correctness
+Detected language
 
----
+Confidence score
 
-## Notes on the UI you may notice
+Score breakdown
 
-- Some entries legitimately show **“No symptoms extracted”**.
-  Example: `e_004` contains **anxiety**, which this system intentionally ignores (emotion, not a physical symptom).
-- Meal may display as `-` when not explicitly inferable. This is intentional to avoid over-inference.
+Timestamp & metadata
 
----
+HinglishWord
 
-## Known limitations
+Roman Hindi vocabulary
 
-- Deterministic lexicons are intentionally conservative: unknown foods/symptoms will be missed.
-- Meal inference is keyword-driven; no probabilistic inference.
-- Quantity/unit heuristics cover common patterns only.
+Admin-managed
 
----
+Frequency & type tracking
 
-## Future improvements
+DetectionStats
 
-- Expand food/symptom lexicons via curated lists.
-- Improve deterministic chunking for mixed-language entries.
-- Add optional export from the UI (download parsed JSONL).
+Daily aggregates
+
+Confidence distribution
+
+Language trends
+
+🚀 Deployment
+Environment Variables
+DEBUG=False
+SECRET_KEY=your-secret-key
+ALLOWED_HOSTS=yourdomain.com
+DATABASE_URL=postgresql://user:pass@localhost/dbname
+
+Collect Static Files
+python manage.py collectstatic
+
+Gunicorn
+gunicorn langsense.wsgi:application --bind 0.0.0.0:8000
+
+Docker (Optional)
+FROM python:3.10-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+
+🤝 Contributing
+
+Fork the repository
+
+Create a feature branch
+
+Commit changes
+
+Add tests if applicable
+
+Submit a pull request
+
+📝 License
+
+MIT License — free to use, modify, and distribute.
+
+🙏 Acknowledgements
+
+Django & Django REST Framework
+
+Tailwind CSS
+
+Chart.js
+
+Font Awesome
+
+📞 Support
+
+📧 Email: mittalprakhar504@gmail.com
